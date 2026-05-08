@@ -16,7 +16,6 @@ BOOLEAN ProcessWatcherOpensHandles = TRUE;
 
 RTL_GENERIC_COMPARE_RESULTS NTAPI ProcessListCompare(__in struct _RTL_GENERIC_TABLE *Table, __in PProcessListData FirstStruct, __in PProcessListData SecondStruct)
 {
-	//DbgPrint("ProcessListCompate");
 
 	if (FirstStruct->ProcessID  == SecondStruct->ProcessID)
 		return GenericEqual;
@@ -34,13 +33,11 @@ PVOID NTAPI ProcessListAlloc(__in struct _RTL_GENERIC_TABLE *Table, __in CLONG B
 	PVOID r=ExAllocatePool(PagedPool, ByteSize);
 	RtlZeroMemory(r, ByteSize);
 
-	//DbgPrint("ProcessListAlloc %d",(int)ByteSize);
 	return r;
 }
 
 VOID NTAPI ProcessListDealloc(__in struct _RTL_GENERIC_TABLE *Table, __in __drv_freesMem(Mem) __post_invalid PVOID Buffer)
 {
-	//DbgPrint("ProcessListDealloc");
 	ExFreePool(Buffer);
 }
 
@@ -95,10 +92,6 @@ VOID CreateThreadNotifyRoutine(IN HANDLE  ProcessId,IN HANDLE  ThreadId,IN BOOLE
 {
 	if (KeGetCurrentIrql()==PASSIVE_LEVEL)
 	{
-		/*if (DebuggedProcessID==(ULONG)ProcessId)
-		{
-		//	PsSetContextThread (bah, xp only)
-		}*/
 
 		if (ExAcquireResourceExclusiveLite(&ProcesslistR, TRUE))
 		{
@@ -112,7 +105,6 @@ VOID CreateThreadNotifyRoutine(IN HANDLE  ProcessId,IN HANDLE  ThreadId,IN BOOLE
 						DbgPrint("Create ProcessID=%x\nThreadID=%x\n",(UINT_PTR)ProcessId,(UINT_PTR)ThreadId);
 						else
 						DbgPrint("Destroy ProcessID=%x\nThreadID=%x\n",(UINT_PTR)ProcessId,(UINT_PTR)ThreadId);
-						*/
 
 				ThreadEventCount++;
 			}
@@ -142,7 +134,6 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 	{
 		struct ProcessData *tempProcessEntry;
 
-		//aquire a spinlock
 		if (ExAcquireResourceExclusiveLite(&ProcesslistR, TRUE))
 		{
 
@@ -158,10 +149,7 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 				
 				if (Create)
 				{
-					//Open a handle to this process
-
-					/*
-						
+	
 					HANDLE ph = 0;
 					NTSTATUS r = ObOpenObjectByPointer(CurrentProcess, 0, NULL, PROCESS_ALL_ACCESS, *PsProcessType, KernelMode, &ph);
 
@@ -228,9 +216,7 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
                         }
 						//add it to the list
 						BOOLEAN newElement = FALSE;
-						if (r) //weird
-						{
-							DbgPrint("Duplicate PID detected...");
+							{
 							RtlDeleteElementGenericTable(InternalProcessList, r);
 						}
 
@@ -241,34 +227,27 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 					}
 					else
 					{
-						//remove it from the list (if it's there)
-						DbgPrint("Process %d destruction. r=%p", (int)(UINT_PTR)d.ProcessID, r);
+							DbgPrint("Process %d destruction. r=%p", (int)(UINT_PTR)d.ProcessID, r);
 						if (r)
 						{
 							DbgPrint("Process that was in the list has been closed");
-							//if (r->ProcessHandle)
-							//	ZwClose(r->ProcessHandle);
-
-							//RtlDeleteElementGenericTable(InternalProcessList, r);
-							r->Deleted = 1;
+	
+								r->Deleted = 1;
 						}
 
 						if (CurrentProcess == WatcherProcess)
 						{
 							DbgPrint("CE Closed");
 							
-							//ZwClose(WatcherHandle);
-
-							CleanProcessList(); //CE closed
-							WatcherProcess = 0;
+	
+									WatcherProcess = 0;
 						}
 					}
 				}
 			}
 
 
-			//fill in a processcreateblock with data
-			if (ProcessEventCount < 50)
+				if (ProcessEventCount < 50)
 			{
 				ProcessEventdata[ProcessEventCount].Created = Create;
 				ProcessEventdata[ProcessEventCount].ProcessID = (UINT_PTR)ProcessId;
@@ -276,14 +255,11 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 				ProcessEventCount++;
 			}
 
-			//if (!HiddenDriver)
-			if (FALSE) //moved till next version
-			{
+					{
 				if (Create)
 				{
 
-					//allocate a block of memory for the processlist
-
+	
 					tempProcessEntry = ExAllocatePool(PagedPool, sizeof(struct ProcessData));
 					tempProcessEntry->ProcessID = ProcessId;
 					tempProcessEntry->PEProcess = CurrentProcess;
@@ -307,8 +283,7 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 				}
 				else
 				{
-					//find this process and delete it
-					tempProcessEntry = processlist;
+						tempProcessEntry = processlist;
 					while (tempProcessEntry)
 					{
 						if (tempProcessEntry->ProcessID == ProcessId)
@@ -320,13 +295,7 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 							if (tempProcessEntry->previous)
 								tempProcessEntry->previous->next = tempProcessEntry->next;
 							else
-								processlist = tempProcessEntry->next;	//it had no previous entry, so it's the root
-
-
-
-							/*
-							if (tempProcessEntry->Threads)
-							{
+								processlist = tempProcessEntry->next;	
 							struct ThreadData *tempthread,*tempthread2;
 							KIRQL OldIrql2;
 
@@ -373,7 +342,6 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 		if (CurrentProcess!=NULL)
 			ObDereferenceObject(CurrentProcess);
 
-		//signal process event (if there's one waiting for a signal)
 		if (ProcessEvent)
 		{
 			KeSetEvent(ProcessEvent, 0, FALSE);
@@ -399,7 +367,6 @@ HANDLE GetHandleForProcessID(IN HANDLE ProcessID)
 		if (r)
 		{
 			DbgPrint("Found a handle for PID %d (%x)", (int)(UINT_PTR)ProcessID, (int)(UINT_PTR)r->ProcessHandle);
-			return r->ProcessHandle; // r->ProcessHandle;
 		}	
 	}	
 

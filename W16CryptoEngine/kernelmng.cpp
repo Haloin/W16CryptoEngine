@@ -125,8 +125,7 @@ BOOLEAN CheckImageName(IN PUNICODE_STRING FullImageName, IN char* List,int lists
 
 						if ((tempstring.Length>=modulesize) && (strcmp(p,&tempstring.Buffer[tempstring.Length-modulesize])==0))
 						{
-							//we have a match!!!
-							DbgPrint("It's a match with %s\n",p);
+														DbgPrint("It's a match with %s\n",p);
 							return TRUE;	
 						}						
 	

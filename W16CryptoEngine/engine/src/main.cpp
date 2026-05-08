@@ -27,8 +27,7 @@ void handle_signal(int) {
 }
 
 struct EngineConfig {
-    const char* nats_url      = "nats://127.0.0.1:4222";
-    const char* order_subject = "predmarket.orders";
+        const char* order_subject = "predmarket.orders";
     const char* fill_subject  = "predmarket.fills";
     const char* depth_subject = "predmarket.depth";
     const char* wal_dir       = "/var/lib/predmarket/wal";

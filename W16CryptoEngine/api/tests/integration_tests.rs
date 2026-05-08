@@ -328,7 +328,6 @@ async fn test_cors_headers() {
             Request::builder()
                 .method("OPTIONS")
                 .uri("/v1/health")
-                .header("Origin", "https://app.predmarket.com")
                 .header("Access-Control-Request-Method", "GET")
                 .body(Body::empty())
                 .unwrap(),

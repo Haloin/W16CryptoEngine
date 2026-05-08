@@ -8,10 +8,6 @@
 
 #include "interruptHook.h"
 asm(
-    ;RCX: 1st integer argument
-;RDX: 2nd integer argument
-;R8: 3rd integer argument
-;R9: 4th integer argument
 
 CALLBACK        struct
 A		 		qword ?
@@ -19,40 +15,33 @@ S				qword ?
 CALLBACK        ends
 
 
-ASMENTRY_STACK	struct ;keep this 16 byte aligned
+ASMENTRY_STACK	struct
 	Scratchspace	qword ?
 	Scratchspace2	qword ? 
 	Scratchspace3	qword ?
 	Scratchspace4	qword ? 	
 	Originalmxcsr	qword ?	
-	OriginalRAX		qword ?  ;0
-	OriginalRBX		qword ?  ;1
-	OriginalRCX		qword ?  ;2
-	OriginalRDX		qword ?  ;3
-	OriginalRSI		qword ?  ;4
-	OriginalRDI		qword ?  ;5
-	OriginalRBP		qword ?  ;6
-	OriginalRSP		qword ?  ;7 not really 'original'
-	OriginalR8		qword ?  ;8
-	OriginalR9		qword ?  ;9
-	OriginalR10		qword ?  ;10
-	OriginalR11		qword ?  ;11
-	OriginalR12		qword ?  ;12
-	OriginalR13		qword ?  ;13
-	OriginalR14		qword ?  ;14
-	OriginalR15		qword ?  ;15
-	OriginalES		qword ?  ;16
-	OriginalDS		qword ?	 ;17
-	OriginalSS		qword ?	 ;18
-	fxsavespace     db 512 dup(?)  ;fpu state
+	OriginalRAX		qword ?
+	OriginalRBX		qword ?
+	OriginalRCX		qword ?
+	OriginalRDX		qword ?
+	OriginalRSI		qword ?
+	OriginalRDI		qword ?
+	OriginalRBP		qword ?
+	OriginalRSP		qword ?
+	OriginalR8		qword ?
+	OriginalR9		qword ?
+	OriginalR10		qword ?
+	OriginalR11		qword ?
+	OriginalR12		qword ?
+	OriginalR13		qword ?
+	OriginalR14		qword ?
+	OriginalR15		qword ?
+	OriginalES		qword ?
+	OriginalDS		qword ?
+	OriginalSS		qword ?
+	fxsavespace     db 512 dup(?)
 
-	;errorcode/returnaddress   ;19
-	;4096 bytes 
-	;eip     ;20
-	;cs      ;21
-	;eflags
-	;esp
-	;ss
 	
 ASMENTRY_STACK	ends
 
@@ -64,14 +53,12 @@ EXTERN Int1JumpBackLocation : CALLBACK
 
 PUBLIC interrupt1_asmentry
 interrupt1_asmentry:
-		;save stack position
-		push [Int1JumpBackLocation.A] ;push an errorcode on the stack so the stackindex enum type can stay the same relative to interrupts that do have an errorcode (int 14).  Also helps with variable interrupt handlers
+		push [Int1JumpBackLocation.A]
 		
-		sub rsp,4096  ;functions like setThreadContext adjust the stackframe entry directly. I can't have that messing up my own stack
+		sub rsp,4096
 
 		cld			
 
-		;stack is aligned at this point
 		sub rsp,SIZEOF ASMENTRY_STACK
 		
 		
@@ -119,12 +106,11 @@ interrupt1_asmentry:
 		mov ss,ax
 		
 		
-		; rbp= pointer to OriginalRAX
+				
+		cmp qword ptr [rbp+8*21+512+4096],010h
+		je skipswap1
 		
-		cmp qword ptr [rbp+8*21+512+4096],010h ;check if origin is in kernelmode (check ss)
-		je skipswap1 ;if so, skip the swapgs
-		
-		swapgs ;swap gs with the kernel version
+		swapgs
 		
 skipswap1:
 		
@@ -141,16 +127,15 @@ skipswap1:
 		
 		ldmxcsr dword ptr (ASMENTRY_STACK PTR [rsp]).Originalmxcsr
 		
-		cmp qword ptr [rbp+8*21+512+4096],10h ;was it a kernelmode interrupt ?
-		je skipswap2 ;if so, skip the swapgs part
+		cmp qword ptr [rbp+8*21+512+4096],10h
+		je skipswap2
 				
-		swapgs ;swap back
+		swapgs
 skipswap2:
 
 		cmp al,1
 
 
-		;restore state
 		fxrstor (ASMENTRY_STACK PTR [rsp]).fxsavespace
 
 		mov ax,word ptr (ASMENTRY_STACK PTR [rsp]).OriginalDS
@@ -181,25 +166,19 @@ skipswap2:
 	
 		je skip_original_int1
 		
-		;stack unwind
 		mov rbp,(ASMENTRY_STACK PTR [rsp]).OriginalRBP
 		add rsp,SIZEOF ASMENTRY_STACK  
 		add rsp,4096
 
-		;at this point [rsp] holds the original int1 handler
-		ret ; used to be add rsp,8 ;+8 for the push 0
+		ret
 
-		;todo: do a jmp [Int1JumpBackLocationCPUNR] and have 256 Int1JumpBackLocationCPUNR's and each cpu goes to it's own interrupt1_asmentry[cpunr]
-		
-		;jmp [Int1JumpBackLocation.A] ;<-works fine	
 
 
 skip_original_int1:
-		;stack unwind
 		mov rbp,(ASMENTRY_STACK PTR [rsp]).OriginalRBP
 		add rsp,SIZEOF ASMENTRY_STACK 	
 		add rsp,4096
-		add rsp,8  ;+8 for the push	
+		add rsp,8
 		
 		iretq
 

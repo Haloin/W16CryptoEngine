@@ -280,7 +280,7 @@ int pscaninit()
 
 				}
 				
-				//cleanup the temporary pointerdata 
+	 
 				for (i=0; i<pointercount; i++)
 				{
 				  if (pd[i].staticdata)
@@ -298,7 +298,6 @@ int pscaninit()
 
 		if (bytes)
 		{				
-		    //send the last bit
 			cudaError_t r=cudaMemcpy(cudainitdata, initdata, bytes, cudaMemcpyHostToDevice);
 			findoraddpointervalue<<<1,1>>>(cudainitdata, bytes);
 			bytes=0;
@@ -316,7 +315,6 @@ int pscaninit()
 		  cudaFree(cudainitdata);
 		  
 		cudaDeviceSynchronize();  
-		//build the linked list
 		generateLinkedList<<<1,1>>>();
 		cudaDeviceSynchronize(); 
 		

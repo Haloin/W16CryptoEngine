@@ -5,7 +5,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
-const POLYMARKET_API_URL: &str = "https://clob.polymarket.com";
 const POLYMARKET_HOST: &str = "clob.polymarket.com";
 
 pub struct PolymarketClient {
