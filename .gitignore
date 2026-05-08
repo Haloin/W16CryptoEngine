@@ -1,0 +1,80 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.p12
+
+# Logs
+*.log
+logs/
+
+# Build output / check logs
+*check_output.txt
+error_locations.txt
+fresh_check.txt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test artifacts
+coverage/
+*.profraw
+*.prof
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker
+.dockerignore
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Backup files
+*.bak
+*.backup
+*.old

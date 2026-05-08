@@ -1,0 +1,42 @@
+;
+; Polymarket Engine Installation File
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ManufacturerName%
+DriverVer=04/15/2026,1.0.0.0
+CatalogFile=polymarketEngine.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+PolymarketEngine_Device_CoInstaller_CopyFiles = 11
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%DeviceName%=PolymarketEngine_Device, Root\PolymarketEngine
+
+[PolymarketEngine_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+polymarketEngine.sys
+
+[PolymarketEngine_Device.NT.Services]
+AddService = %ServiceName%,,PolymarketEngine_Service_Inst
+
+[PolymarketEngine_Service_Inst]
+DisplayName    = %ServiceName%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\polymarketEngine.sys
+
+[Strings]
+ManufacturerName="<Your Company Name>"
+DeviceName="Polymarket Engine Kernel Manager"
+ServiceName="polymarketEngine"

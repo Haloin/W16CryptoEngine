@@ -1,0 +1,11 @@
+[package]
+name    = "settlement"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common   = { path = "../common" }
+db       = { path = "../db" }
+tokio    = { workspace = true }
+tracing  = { workspace = true }
+chrono   = { workspace = true }

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: predmarket-config
+  namespace: predmarket
+data:
+  RUST_LOG: "info"
+  RUST_BACKTRACE: "1"
+  PREDMARKET_NATS_URL: "nats://nats:4222"
+  PREDMARKET_ORDER_SUBJECT: "predmarket.orders"
+  PREDMARKET_FILL_SUBJECT: "predmarket.fills"
+  PREDMARKET_DEPTH_SUBJECT: "predmarket.depth"
+  PREDMARKET_WAL_DIR: "/var/lib/predmarket/wal"
+  PREDMARKET_SNAPSHOT_DIR: "/var/lib/predmarket/snapshots"
+  PREDMARKET_SNAPSHOT_INTERVAL_SECS: "300"
+  FILL_WORKERS: "4"

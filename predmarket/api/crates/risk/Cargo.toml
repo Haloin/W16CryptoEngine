@@ -1,0 +1,10 @@
+[package]
+name    = "risk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common      = { path = "../common" }
+db          = { path = "../db" }
+tokio       = { workspace = true }
+tracing     = { workspace = true }

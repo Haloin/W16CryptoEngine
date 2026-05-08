@@ -1,0 +1,16 @@
+[package]
+name    = "messaging"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common     = { path = "../common" }
+async-nats = { workspace = true }
+tokio      = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+bytes      = { workspace = true }
+tracing    = { workspace = true }
+thiserror  = { workspace = true }
+uuid       = { workspace = true }
+flatbuffers = { workspace = true }

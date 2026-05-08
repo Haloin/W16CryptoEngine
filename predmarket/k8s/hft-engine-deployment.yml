@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predmarket-hft-engine
+  namespace: predmarket
+  labels:
+    app: predmarket-hft-engine
+    version: v1
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: predmarket-hft-engine
+  template:
+    metadata:
+      labels:
+        app: predmarket-hft-engine
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      nodeSelector:
+        node-type: hft
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "hft"
+          effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - predmarket-hft-engine
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: hft-engine
+          image: predmarket/hft-engine:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+                - SYS_NICE
+                - IPC_LOCK
+                - NET_BIND_SERVICE
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: HFT_ENGINE_ENABLED
+              value: "true"
+            - name: HFT_MARKET_DATA_CORE
+              value: "1"
+            - name: HFT_STRATEGY_CORE
+              value: "2"
+            - name: HFT_EXECUTION_CORE
+              value: "3"
+            - name: HFT_LATENCY_THRESHOLD_NS
+              value: "500000"
+            - name: POLYMARKET_WS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: predmarket-config
+                  key: polymarket-ws-url
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: predmarket-config
+                  key: kafka-brokers
+            - name: PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: predmarket-secrets
+                  key: private-key
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "3000m"
+            limits:
+              memory: "8Gi"
+              cpu: "4000m"
+          volumeMounts:
+            - name: hugepages
+              mountPath: /dev/hugepages
+            - name: kernel-tuning
+              mountPath: /etc/sysctl.d
+      volumes:
+        - name: hugepages
+          emptyDir:
+            medium: HugePages
+        - name: kernel-tuning
+          configMap:
+            name: hft-sysctl
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: predmarket-hft-engine
+  namespace: predmarket
+  labels:
+    app: predmarket-hft-engine
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: predmarket-hft-engine
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: predmarket-hft-engine
+  namespace: predmarket
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: predmarket-hft-engine

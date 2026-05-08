@@ -1,0 +1,42 @@
+[package]
+name    = "api-http"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "api"
+path = "src/main.rs"
+
+[dependencies]
+common     = { path = "../common" }
+db         = { path = "../db" }
+auth       = { path = "../auth" }
+orders     = { path = "../orders" }
+markets    = { path = "../markets" }
+positions  = { path = "../positions" }
+settlement = { path = "../settlement" }
+messaging  = { path = "../messaging" }
+cache      = { path = "../cache" }
+analytics  = { path = "../analytics" }
+polymarket = { path = "../polymarket" }
+blockchain = { path = "../blockchain" }
+audit      = { path = "../audit" }
+
+tokio          = { workspace = true }
+axum           = { workspace = true }
+serde          = { workspace = true }
+serde_json     = { workspace = true }
+tracing        = { workspace = true }
+tracing-subscriber = { workspace = true }
+tower          = { workspace = true }
+tower-http     = { workspace = true }
+prometheus     = { workspace = true }
+uuid           = { workspace = true }
+chrono         = { workspace = true }
+anyhow         = { workspace = true }
+async-trait    = { workspace = true }
+secrecy        = { workspace = true }
+utoipa         = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+dashmap        = "5.5"
+futures-util   = "0.3"

@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: predmarket-production
+    replica: '{{.ExternalURL}}'
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'predmarket-api'
+    static_configs:
+      - targets: ['api:9090']
+    metrics_path: /metrics
+    scrape_interval: 5s
+    scrape_timeout: 2s
+
+  - job_name: 'predmarket-hft-engine'
+    static_configs:
+      - targets: ['hft-engine:9090']
+    metrics_path: /metrics
+    scrape_interval: 1s
+    scrape_timeout: 500ms
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'kafka-exporter'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']

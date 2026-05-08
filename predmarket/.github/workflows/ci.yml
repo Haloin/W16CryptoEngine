@@ -1,0 +1,242 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  rust-checks:
+    name: Rust Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run Tests
+        run: cargo test --all --verbose
+
+      - name: Build Release
+        run: cargo build --release --all-targets
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-binaries
+          path: target/release/
+
+  hft-engine-checks:
+    name: HFT Engine Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang-15 \
+            llvm-15 \
+            libnuma-dev \
+            liburing-dev
+
+      - name: Install simdjson
+        run: |
+          git clone --depth 1 https://github.com/simdjson/simdjson.git
+          cd simdjson
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSIMDJSON_DEVELOPER_MODE=OFF
+          sudo cmake --build build --target install
+
+      - name: Install libsecp256k1
+        run: |
+          git clone --depth 1 https://github.com/bitcoin-core/secp256k1.git
+          cd secp256k1
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSECP256K1_ENABLE_MODULE_RECOVERY=ON
+          sudo cmake --build build --target install
+
+      - name: Configure CMake
+        working-directory: engine
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang-15 \
+            -DCMAKE_CXX_COMPILER=clang++-15 \
+            -DUSE_IO_URING=ON \
+            -DUSE_SIMDJSON=ON \
+            -DUSE_SECP256K1=ON
+
+      - name: Build HFT Engine
+        working-directory: engine
+        run: cmake --build build --target predmarket-hft -j$(nproc)
+
+      - name: Run HFT Tests
+        working-directory: engine
+        run: |
+          cmake --build build --target test
+          ctest --test-dir build --output-on-failure
+
+      - name: Benchmark Latency
+        working-directory: engine
+        run: |
+          ./build/bin/predmarket-hft --benchmark --duration 60
+
+      - name: Upload HFT Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hft-engine
+          path: engine/build/bin/predmarket-hft
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [rust-checks]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [rust-checks, hft-engine-checks, security-scan]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push HFT image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./engine
+          file: ./engine/Dockerfile.hft
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-hft:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Deploy to Staging
+        run: |
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          kubectl set image deployment/predmarket-api api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n predmarket-staging
+          kubectl set image deployment/predmarket-hft-engine hft-engine=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-hft:${{ github.sha }} -n predmarket-staging
+          kubectl rollout status deployment/predmarket-api -n predmarket-staging
+          kubectl rollout status deployment/predmarket-hft-engine -n predmarket-staging
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Deploy to Production
+        run: |
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          kubectl set image deployment/predmarket-api api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} -n predmarket
+          kubectl set image deployment/predmarket-hft-engine hft-engine=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-hft:${{ github.ref_name }} -n predmarket
+          kubectl rollout status deployment/predmarket-api -n predmarket
+          kubectl rollout status deployment/predmarket-hft-engine -n predmarket
+
+      - name: Verify Deployment
+        run: |
+          kubectl run smoke-test --rm -i --restart=Never --image=curlimages/curl:latest -- \
+            curl -f http://predmarket-api.predmarket.svc.cluster.local:8080/health

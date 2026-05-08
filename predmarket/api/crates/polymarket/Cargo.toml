@@ -1,0 +1,28 @@
+[package]
+name = "polymarket"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-webpki-roots"] }
+futures = "0.3"
+url = "2.5"
+chrono = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+ethers = { version = "2.0", features = ["ws", "rustls"] }
+ethabi = "18.0"
+sha3 = "0.10"
+secp256k1 = { version = "0.28", features = ["recovery", "global-context"] }
+base64 = "0.22"
+hex = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+wiremock = "0.6"

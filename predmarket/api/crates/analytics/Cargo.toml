@@ -1,0 +1,25 @@
+[package]
+name    = "analytics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common      = { path = "../common" }
+db          = { path = "../db" }
+polymarket  = { path = "../polymarket" }
+tokio       = { workspace = true }
+tracing     = { workspace = true }
+chrono      = { workspace = true }
+uuid        = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+linfa       = "0.7"
+linfa-trees = "0.7"
+ndarray     = "0.15"
+ndarray-stats = "0.5"
+rand        = "0.8"
+statrs      = "0.16"
+faer        = "0.19"
+ort         = "2.0.0-rc.12"
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }

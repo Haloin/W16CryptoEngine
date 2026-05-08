@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine
+  namespace: predmarket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine
+  template:
+    metadata:
+      labels:
+        app: engine
+    spec:
+      containers:
+        - name: engine
+          image: predmarket-engine:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: predmarket-config
+          volumeMounts:
+            - name: wal-data
+              mountPath: /var/lib/predmarket/wal
+            - name: snapshot-data
+              mountPath: /var/lib/predmarket/snapshots
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /proc/1/status
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: wal-data
+          persistentVolumeClaim:
+            claimName: engine-wal
+        - name: snapshot-data
+          persistentVolumeClaim:
+            claimName: engine-snapshots
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: engine-wal
+  namespace: predmarket
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: engine-snapshots
+  namespace: predmarket
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       predmarket
+      POSTGRES_USER:     predmarket
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U predmarket"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
+    volumes:
+      - nats_data:/data
+
+  engine:
+    build:
+      context: ../../engine
+      dockerfile: ../infra/docker/Dockerfile.engine
+    restart: unless-stopped
+    environment:
+      PREDMARKET_NATS_URL:      nats://nats:4222
+      PREDMARKET_ORDER_SUBJECT: predmarket.orders
+      PREDMARKET_FILL_SUBJECT:  predmarket.fills
+      PREDMARKET_DEPTH_SUBJECT: predmarket.depth
+      PREDMARKET_WAL_DIR:       /var/lib/predmarket/wal
+    volumes:
+      - engine_wal:/var/lib/predmarket/wal
+    depends_on:
+      nats:
+        condition: service_started
+
+  api:
+    build:
+      context: ../../api
+      dockerfile: ../infra/docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      PREDMARKET__DATABASE__URL:              postgres://predmarket:${POSTGRES_PASSWORD}@postgres:5432/predmarket
+      PREDMARKET__NATS__URL:                  nats://nats:4222
+      PREDMARKET__JWT__SECRET:                ${JWT_SECRET}
+      PREDMARKET__SERVER__HOST:               0.0.0.0
+      PREDMARKET__SERVER__PORT:               "8080"
+      PREDMARKET__SERVER__SHUTDOWN_TIMEOUT:   "5"
+      PREDMARKET__DATABASE__MAX_CONNECTIONS:  "20"
+      PREDMARKET__DATABASE__MIN_CONNECTIONS:  "2"
+      PREDMARKET__DATABASE__CONNECT_TIMEOUT:  "10"
+      PREDMARKET__DATABASE__IDLE_TIMEOUT:     "300"
+      PREDMARKET__DATABASE__MAX_LIFETIME:     "1800"
+      PREDMARKET__NATS__ORDER_SUBJECT:        predmarket.orders
+      PREDMARKET__NATS__FILL_SUBJECT:         predmarket.fills
+      PREDMARKET__NATS__DEPTH_SUBJECT:        predmarket.depth
+      PREDMARKET__NATS__CONNECT_TIMEOUT:      "10"
+      PREDMARKET__NATS__REQUEST_TIMEOUT:      "200"
+      PREDMARKET__JWT__TTL_SECS:              "86400"
+      PREDMARKET__ENGINE__SUBMIT_TIMEOUT_MS:  "100"
+      PREDMARKET__ENGINE__CANCEL_TIMEOUT_MS:  "100"
+      PREDMARKET__ENGINE__CB_FAILURE_THRESHOLD: "10"
+      PREDMARKET__ENGINE__CB_RECOVERY_SECS:   "30"
+      RUST_LOG: info
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      engine:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  nats_data:
+  engine_wal:

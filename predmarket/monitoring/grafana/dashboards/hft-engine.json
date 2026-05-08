@@ -1,0 +1,185 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "predmarket-hft-engine",
+    "title": "PolyMarket HFT Engine",
+    "tags": ["hft", "trading", "performance"],
+    "timezone": "utc",
+    "schemaVersion": 36,
+    "refresh": "1s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Tick-to-Trade Latency",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(hft_tick_to_trade_latency_bucket[1m]))",
+            "legendFormat": "p99"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(hft_tick_to_trade_latency_bucket[1m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(hft_tick_to_trade_latency_bucket[1m]))",
+            "legendFormat": "p50"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "µs",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 400},
+                {"color": "red", "value": 500}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Orders Per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(hft_orders_submitted_total[1m])",
+            "legendFormat": "Orders/s"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Signal Generation Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(hft_signals_generated_total[1m])",
+            "legendFormat": "Signals/s"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Queue Depth",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "hft_market_data_queue_depth",
+            "legendFormat": "Market Data"
+          },
+          {
+            "expr": "hft_signal_queue_depth",
+            "legendFormat": "Signals"
+          },
+          {
+            "expr": "hft_order_queue_depth",
+            "legendFormat": "Orders"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "CPU Usage by Core",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "hft_cpu_usage{core=\"1\"}",
+            "legendFormat": "Market Data Core"
+          },
+          {
+            "expr": "hft_cpu_usage{core=\"2\"}",
+            "legendFormat": "Strategy Core"
+          },
+          {
+            "expr": "hft_cpu_usage{core=\"3\"}",
+            "legendFormat": "Execution Core"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "hft_memory_usage_bytes",
+            "legendFormat": "Used"
+          },
+          {
+            "expr": "hft_memory_resident_bytes",
+            "legendFormat": "Resident"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Cache Miss Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(hft_cache_misses_total[1m])",
+            "legendFormat": "Misses/s"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+      },
+      {
+        "id": 8,
+        "title": "Branch Misprediction Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(hft_branch_mispredictions_total[1m])",
+            "legendFormat": "Mispredictions/s"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "P&L",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "hft_pnl_usd",
+            "legendFormat": "USD"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 0},
+                {"color": "green", "value": 1000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32}
+      },
+      {
+        "id": 10,
+        "title": "Sharpe Ratio",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "hft_sharpe_ratio",
+            "legendFormat": "Ratio"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32}
+      }
+    ]
+  }
+}
