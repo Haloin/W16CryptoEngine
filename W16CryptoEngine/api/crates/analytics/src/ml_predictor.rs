@@ -6,10 +6,8 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
-
 const FEATURE_WINDOW: usize = 50;
 const PREDICTION_HORIZON_MS: i64 = 60000;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MLPrediction {
     pub market_id: String,
