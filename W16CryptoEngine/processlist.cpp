@@ -101,33 +101,6 @@ VOID CreateThreadNotifyRoutine(IN HANDLE  ProcessId,IN HANDLE  ThreadId,IN BOOLE
 				ThreadEventData[ThreadEventCount].ProcessID = (UINT_PTR)ProcessId;
 				ThreadEventData[ThreadEventCount].ThreadID = (UINT_PTR)ThreadId;
 
-				/*	if (Create)
-						DbgPrint("Create ProcessID=%x\nThreadID=%x\n",(UINT_PTR)ProcessId,(UINT_PTR)ThreadId);
-						else
-						DbgPrint("Destroy ProcessID=%x\nThreadID=%x\n",(UINT_PTR)ProcessId,(UINT_PTR)ThreadId);
-
-				ThreadEventCount++;
-			}
-		}
-		ExReleaseResourceLite(&ProcesslistR);
-
-		KeSetEvent(ThreadEvent, 0, FALSE);
-		KeClearEvent(ThreadEvent);
-	}
-}
-
-VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BOOLEAN  Create)
-{
-	PEPROCESS CurrentProcess = NULL;
-	HANDLE ProcessHandle = 0;
-	/*
-	if (PsSuspendProcess)
-	{
-		DbgPrint("Suspending process %d", PsGetCurrentThreadId());
-		PsSuspendProcess(PsGetCurrentProcess());
-		DbgPrint("After PsGetCurrentProcess()");
-	}
-*/
 	
 	
 	if (KeGetCurrentIrql()==PASSIVE_LEVEL)
@@ -214,7 +187,7 @@ VOID CreateProcessNotifyRoutine(IN HANDLE  ParentId, IN HANDLE  ProcessId, IN BO
 
 
                         }
-						//add it to the list
+						
 						BOOLEAN newElement = FALSE;
 							{
 							RtlDeleteElementGenericTable(InternalProcessList, r);
