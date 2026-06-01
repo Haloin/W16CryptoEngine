@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
-
 pub mod signals;
 pub mod regime;
 pub mod position_monitor;
