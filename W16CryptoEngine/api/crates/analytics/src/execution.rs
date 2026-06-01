@@ -11,7 +11,6 @@ use std::env;
 use tokio::sync::{RwLock, mpsc};
 use tokio::time::{interval, sleep};
 use tracing::{info, warn, error};
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExecutionStrategy {
     TWAP,
