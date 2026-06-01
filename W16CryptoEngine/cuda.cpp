@@ -12,17 +12,10 @@
 
 HANDLE f;
 z_stream strm;
-
-
-
-unsigned char in[16*1024];
-
-    
-
+unsigned char in[16*1024];    
 int readBytes(void *buf, int count)
 {
 	int r;
-	
 	strm.avail_out=count;
 	strm.next_out=(Bytef *)buf;
 
@@ -302,10 +295,7 @@ int pscaninit()
 			findoraddpointervalue<<<1,1>>>(cudainitdata, bytes);
 			bytes=0;
 		}
-		
-		
-		
-		
+	
 					
 		if (initdata)
 		  free(initdata);
