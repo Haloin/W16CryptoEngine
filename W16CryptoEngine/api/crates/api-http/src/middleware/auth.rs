@@ -9,13 +9,11 @@ use common::{AppError, AppResult};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-
 #[derive(Clone)]
 pub struct AuthContext {
     pub user_id: String,
     pub is_admin: bool,
 }
-
 
 pub async fn auth_middleware(
     mut req: axum::extract::Request,
@@ -66,8 +64,6 @@ pub async fn admin_middleware(
     
     Ok(next.run(req).await)
 }
-
-
 pub fn get_auth_context(req: &axum::extract::Request) -> Result<&AuthContext, AppError> {
     req.extensions().get::<AuthContext>()
         .ok_or(AppError::Unauthorized)
