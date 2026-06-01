@@ -4,9 +4,7 @@ use reqwest::{Client, RequestBuilder, Response};
 use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
-
 const POLYMARKET_HOST: &str = "clob.polymarket.com";
-
 pub struct PolymarketClient {
     client: Client,
     base_url: String,
